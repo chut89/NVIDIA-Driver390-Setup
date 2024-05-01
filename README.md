@@ -179,9 +179,23 @@ server glx extensions:
     GLX_SGI_video_sync
 client glx vendor string: NVIDIA Corporation
 ```
-On the contrary, if you get some error like `freeglut (./nbody): OpenGL GLX extension not supported by display ':1'` something is still off. If you run into trouble and does not know what's happening, you can find logs for most of the cases in `/var/log/`. 
+On the contrary, if you get some errornous result like 
+```console
+name of display: :0
+Error: couldn't find RGB GLX visual or fbconfig
+```
+or indirectly from compile log `freeglut (./nbody): OpenGL GLX extension not supported by display ':1'` something is still off. If you run into trouble and does not know what's happening, you can find logs for most of the cases in `/var/log/`
 
-Inspecting Xorg.0.log `grep -i nvidia /var/log/Xorg.0.log` as suggested from https://discussion.fedoraproject.org/t/error-couldnt-find-rgb-glx-visual-or-fbconfig/57646/8 showed me that the nvidia driver cannot be loaded. More specifically freeglut cannot dynamically link to `libnvidia-tls`, `libnvidia-glcore` and `libnvidia-ml`
+Inspecting Xorg.0.log `grep -i nvidia /var/log/Xorg.0.log` as suggested from https://discussion.fedoraproject.org/t/error-couldnt-find-rgb-glx-visual-or-fbconfig/57646/8 showed me that the nvidia driver cannot be loaded. 
+```console
+[    28.204] (II) LoadModule: "glx"
+[    28.204] (II) Loading /usr/lib/x86_64-linux-gnu/xorg/extra-modules/libglx.so
+[    28.279] (EE) Failed to load /usr/lib/x86_64-linux-gnu/xorg/extra-modules  /libglx.so: libnvidia-tls.so.390.157: cannot open shared object file: No such file or directory
+[    28.279] (II) UnloadModule: "glx"
+[    28.279] (II) Unloading glx
+[    28.279] (EE) Failed to load module "glx" (loader failed, 7)
+```
+More specifically freeglut cannot dynamically link to `libnvidia-tls`, `libnvidia-glcore` and `libnvidia-ml`
 ```sh
 $ ldd /usr/lib/x86_64-linux-gnu/nvidia/xorg/libglx.so
 ...
@@ -189,8 +203,15 @@ libnvidia-tls.so.390.157 => not found
 libnvidia-glcore.so.390.157 => not found
 ...
 ```
+Quick explanation from Stackoverflow: 
+> GLX is the X11 protocol extension used to setup OpenGL contexts on X11 drawables. However this is an extension provided by the device driver. You are using a NVidia card. My guess is, that this is a vanilla installation of a system that doesn't automatically install the proprietary nvidia drivers and neither configures the open nouveau drivers.
+>
+> So the X11 server probably uses either the nv or the fbdev or the vesa driver; none of those support OpenGL/GLX.
+>
+> Solution: Install and configure the proper driver. Either nouveau or the drivers you can download from http://www.nvidia.com/object/unix.html and install that
 
 ## Installing NVIDIA-CUDA-Toolkit
+
 My initial plan was to install Cuda Toolkit in order to run Tensorflow code with GPU accelarated on my Ubuntu machine which I later realized that Tensorflow requires Compute Capability 3.0 :sick. In simple words, CUDA is an abstract layer for developer to write General Purpose GPU code on your graphic card as a hardware. By means of CUDA SDK you can program your Processing Units, make them parallel and able to communicate with CPU without the need to involve with low-level GL operations. Of course CUDA requires that NVIDIA or other provider driver has to be installed beforehand.
 
 One difficulty is that you must determine the right CUDA version for your driver (my old and weak buddy). It is recommended to check the documentation carefully before installation or you'll end up going through vicious circle of installation/removal of CUDA Toolkit. You may need to deep dive into this list
