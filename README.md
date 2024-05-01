@@ -376,4 +376,6 @@ endif (WIN32)
 ```
 Rerun cmake and make and finally
 
+[Bildschirmaufzeichnung vom 22.04.2024, 12:22:27.webm](https://github.com/chut89/NVIDIA-Driver390-Setup/assets/25095256/30633238-a47b-4bda-a17f-9143c8089945)
+
 Voila! We made it! Although not 100% as my original plan because Tensorflow supports SM 3.0 at the minimum but still we've been through a lot and learned a lot from this small experiment!
