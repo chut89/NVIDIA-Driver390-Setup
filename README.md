@@ -32,13 +32,26 @@ and not
 ```console
 llvmpipe
 ```
-When the latter renderer is used which normally means the NVIDIA is not working properly it gives you very poor graphic quality which discourages you to use your machine a lot :-) Asking Microsoft Bing Copilot led me to [THIS IS BROKEN](https://github.com/batocera-linux/batocera.linux/issues/9569) The reason behind that was Linux kernel `6.5.0-generic` was compiled by `gcc-12` whereas the driver was compiled by `gcc-11` and the incompatibility on the header files between two compiler versions led to the driver not being recognized by the new kernel.
+When the latter renderer is used which normally means the NVIDIA is not working properly it gives you very poor graphic quality which discourages you to use your machine a lot 🤣 Asking Microsoft Bing Copilot led me to [this ubuntuforum thread](https://ubuntuforums.org/showthread.php?t=2494273&page=2) The reason behind that was Linux kernel `6.5.0-generic` was compiled by `gcc-12` whereas the driver was compiled by `gcc-11` and the incompatibility on the header files between two compiler versions led to the driver not being recognized by the new kernel.
 
 You can check your gcc version by issuing
 
     $ gcc --version
 
-The Ubuntuforum thread offered two solutions for this particular issue: either to downgrade your gcc version and downgrade linux kernel altogether and reinstall NVIDIA driver or download a patched driver version from a launchpad site which I believe was compiled by gcc-12 and then reinstall it while the official fix from NVIDIA has not been released yet. I opted in the first option although I tested and could verify that the second option also worked.
+The Ubuntuforum thread offered two solutions for this particular issue: either to downgrade your gcc version and downgrade linux kernel altogether and reinstall NVIDIA driver or download a patched driver version from a launchpad site which I believe was compiled by gcc-12 and then reinstall it while the official fix from NVIDIA has not been released yet. I opted in the first option although I tested and could verify that the second option also worked. Details here
+
+```sh
+$ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11 --slave /usr/bin/g++ g++ /usr/bin/g++-11 --slave /usr/bin/gcov gcov /usr/bin/gcov-11
+$ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12 --slave /usr/bin/g++ g++ /usr/bin/g++-12 --slave /usr/bin/gcov gcov /usr/bin/gcov-12
+$ sudo update-alternatives --config gcc
+$ sudo apt remove --purge --yes linux-headers-6.5.0-14-generic linux-image-6.5.0-14-generic linux-modules-6.5.0-14-generic linux-modules-extra-6.5.0-14-generic
+$ sudo apt install --reinstall --yes linux-headers-6.2.0-39-generic linux-image-6.2.0-39-generic linux-modules-6.2.0-39-generic linux-modules-extra-6.2.0-39-generic
+$ sudo apt-mark hold linux-headers-6.2.0-39-generic linux-image-6.2.0-39-generic linux-modules-6.2.0-39-generic linux-modules-extra-6.2.0-39-generic
+# When they come up with a fix to compile NVidia Legacy drivers with Linux kernel 6.5 series kernels, then you can re-add that kernel series by unpinning the kernels via
+# sudo apt-mark unhold linux-headers-6.2.0-39-generic linux-image-6.2.0-39-generic linux-modules-6.2.0-39-generic linux-modules-extra-6.2.0-39-generic
+# sudo apt update && sudo apt upgrade
+# Reboot into 6.2.0-39-generic kernel from GRUB options and reinstall nvidia-driver-390
+```
 
 One question crossed my mind which as to how we could verify that the graphic driver had been properly installed.
 
@@ -73,8 +86,8 @@ One may as well test the graphic driver using NVIDIA util like
 +-----------------------------------------------------------------------------+
 ```
 ### Fix black screen problem after reboot
-Actually things didn't work out flawlessly for me, I stumbled across different Ubuntuforums and ended up installing NVIDIA driver on `6.0.5-generic` kernel and then mistakenly remove `xserver-xorg` which is a very BIG issue you might be yelling at me. But I was stupid and I commited the crime anyway. If you run into the problem that the desktop doesn't load and leaves you staring at the black screen, don't worry 'cause I have a fix for you.
-Reboot into recovery mode, select something like `Linux kernel 6.0.5-recovery mode` on GRUB selection. Or if you get stuck at the middle of the installation you can hold `Alt + F[1-9]` key. In my case I have `FUJITSU ESPRIMO P910` model desktop at this time of writing it was F2 key which brings you to recovery mode. There you still have full access to file system and services. You're gonna start with reinstalling `xserver-xorg` and `ubuntu-gnome-desktop`
+Actually things didn't work out flawlessly for me, I stumbled across different Ubuntuforums and ended up installing NVIDIA driver on `6.5.0-generic` kernel and then mistakenly remove `xserver-xorg` which is a very BIG issue you might be yelling at me. But I was stupid and I commited the crime anyway. If you run into the problem that the desktop doesn't load and leaves you staring at the black screen, don't worry 'cause I have a fix for you.
+Reboot into recovery mode, select something like `Linux kernel 6.5.0-generic (recovery mode)` from GRUB options. Or if you get stuck at the middle of the installation you can hold `Alt + F[1-9]` key. In my case I have `FUJITSU ESPRIMO P910` model desktop at this time of writing it was F2 key which brings you to recovery mode. There you still have full access to file system and services. You're gonna start with reinstalling `xserver-xorg` and `ubuntu-gnome-desktop`
 
     $ apt-cache search ubuntu-gnome-desktop
     $ sudo apt install xserver-xorg ubuntu-gnome-desktop
@@ -138,7 +151,9 @@ At the end you should see a black screen which confirms that OpenGL+NVIDIA Drive
 
 Well it's all good and gives you a pleasure of writing OpenGL code, does it? If you are an admin and prefer looking up the installation guide you may consult https://us.download.nvidia.com/XFree86/Linux-x86_64/390.157/README/index.html
 
-This is indeed a very very good resource which you can dig in. To be honest I learned quite a bunch of basic Linux from it. A good example is that I learnt how to use `glxinfo` from that
+This is indeed a very very good resource which you can dig in. To be honest I learned quite a bunch of basic Linux from it.
+
+If `lspci` and `nvidia-smi` both give you normal result we can still verify your OpenGL/NVIDIA stack by means of `glxinfo`
 ```bash
 $ sudo glxinfo
 ```
@@ -164,7 +179,16 @@ server glx extensions:
     GLX_SGI_video_sync
 client glx vendor string: NVIDIA Corporation
 ```
-If you run into trouble and does not know what's happening, you can find logs for most of the cases in `/var/log/`
+On the contrary, if you get some error like `freeglut (./nbody): OpenGL GLX extension not supported by display ':1'` something is still off. If you run into trouble and does not know what's happening, you can find logs for most of the cases in `/var/log/`. 
+
+Inspecting Xorg.0.log `grep -i nvidia /var/log/Xorg.0.log` as suggested from https://discussion.fedoraproject.org/t/error-couldnt-find-rgb-glx-visual-or-fbconfig/57646/8 showed me that the nvidia driver cannot be loaded. More specifically freeglut cannot dynamically link to `libnvidia-tls`, `libnvidia-glcore` and `libnvidia-ml`
+```sh
+$ ldd /usr/lib/x86_64-linux-gnu/nvidia/xorg/libglx.so
+...
+libnvidia-tls.so.390.157 => not found
+libnvidia-glcore.so.390.157 => not found
+...
+```
 
 ## Installing NVIDIA-CUDA-Toolkit
 My initial plan was to install Cuda Toolkit in order to run Tensorflow code with GPU accelarated on my Ubuntu machine which I later realized that Tensorflow requires Compute Capability 3.0 :sick. In simple words, CUDA is an abstract layer for developer to write General Purpose GPU code on your graphic card as a hardware. By means of CUDA SDK you can program your Processing Units, make them parallel and able to communicate with CPU without the need to involve with low-level GL operations. Of course CUDA requires that NVIDIA or other provider driver has to be installed beforehand.
@@ -173,6 +197,7 @@ One difficulty is that you must determine the right CUDA version for your driver
 
     https://docs.nvidia.com/deploy/cuda-compatibility/index.html#binary-compatibility__table-toolkit-driver (Compatibility concept)
     https://docs.nvidia.com/cuda/archive/11.0/cuda-toolkit-release-notes/index.html#title-new-features (Release Note)
+    https://developer.nvidia.com/cuda-gpus (Compute Capability Table)
     https://developer.nvidia.com/cuda-toolkit-archive (Older Toolkit download page)
 
 Now I'm about to note down my installation steps for future reference, it's a reward for your hardwork to keep your old man up and running 😃 
@@ -379,3 +404,5 @@ Rerun cmake and make and finally
 [Bildschirmaufzeichnung vom 22.04.2024, 12:22:27.webm](https://github.com/chut89/NVIDIA-Driver390-Setup/assets/25095256/30633238-a47b-4bda-a17f-9143c8089945)
 
 Voila! We made it! Although not 100% as my original plan because Tensorflow supports SM 3.0 at the minimum but still we've been through a lot and learned a lot from this small experiment!
+
+The whitepaper was uploaded to this repository in case you want to read it.
