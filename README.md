@@ -259,14 +259,16 @@ in `$CUDA_5_SAMPLE_DIR/5_Simulations/nbody/CMakeLists.txt`
 set(GENCODE -gencode=arch=compute_30,code=sm_30 -gencode=arch=compute_30,code=compute_30)
 set(GENCODE ${GENCODE} -gencode=arch=compute_20,code=sm_20 -gencode=arch=compute_20,code=compute_20)
 ```
-Note the difference between archtype and code, they don't always map to the same figure. In my case the variables should be passed as `arch=compute_20,code=sm_21`
+Note the difference between archtype and code, they don't always map to the same figure. Details can be found here https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#application-compatibility. 
+
+In my case the variables should be passed as `arch=compute_20,code=sm_20` so that `nvcc` will later embed binary code compatible with compute capability 2.0. As in https://developer.nvidia.com/cuda-gpus (Compute Capability Table) my graphic card maps to compute capability 2.1. So host code is generated to automatically select at runtime 2.0 binary code (most appropriate code) to load and execute for my device.
 
 in `$CUDA_9_INSTALL_DIR/samples/1_Utilities/deviceQuery/Makefile`
 ```make
 # Gencode arguments
 SMS ?= 30 35 37 50 52 60 70
 ```
-In any case, you should read the Release Notes to get informed of the new features after each CUDA Toolkit comes around. Back to my problem, as in [insert link here] my graphic card maps to archetype 2.0 and architecture SM2.1 which is rather old, that explains why compilation failed everytime with CUDA 9.0
+In any case, you should read the Release Notes to get informed of the new features after each CUDA Toolkit comes around. 
 
 Once you're done with that basic application you can go ahead building the n-body sample application. One problem I encountered was that one particular CUDA header file purposely refuses to accept higher version of gcc. In particular, after installing CUDA Toolkit 9.0 (or 5.0) and compiled the n-body source code an error was thrown due to this assertion in `$CUDA_9_INSTALL_DIR/include/crt/host_config.h`
 
