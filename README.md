@@ -429,3 +429,16 @@ Rerun cmake and make and finally
 Voila! We made it! Although not 100% as my original plan because Tensorflow supports SM 3.0 at the minimum but still we've been through a lot and learned a lot from this small experiment!
 
 The whitepaper was uploaded to this repository in case you want to read it.
+
+### Appendix
+The reason why Tensorflow requires NVIDIA graphic card of compute capability >= 3.0 is that
+https://www.tensorflow.org/install/source#configuration_options
+> GPU support
+> For GPU support, set cuda=Y during configuration and specify the versions of CUDA and cuDNN.
+
+This implicitly means Tensorflow uses cuDNN as dependency. Yet you can argue to install the very old version of tensorflow which is for example accessible via https://github.com/tensorflow/tensorflow/tree/v1.9.0 and get the very first version of cuDNN https://developer.nvidia.com/rdp/assets/cudnn-65-linux-r1 as suggested in the last answer in https://stackoverflow.com/questions/38542763/how-can-i-make-tensorflow-run-on-a-gpu-with-capability-2-x. I have downloaded cuDNN 6.5 R1 and when I opened User's Guide pdf file it read
+> 2.4. Requirements
+> cuDNN supports NVIDIA GPUs of compute capability 3.0 and higher and requires an
+> NVIDIA Driver compatible with CUDA Toolkit 6.5.
+
+If you've already got NVIDIA GPU of compute capability 3.0 and still enjoy the thrill of building Tensorflow from source you can get support at https://github.com/yaroslavvb/tensorflow-community-wheels/issues/107
