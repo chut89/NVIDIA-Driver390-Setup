@@ -441,4 +441,7 @@ This implicitly means Tensorflow uses cuDNN as dependency. Yet you can argue to 
 > cuDNN supports NVIDIA GPUs of compute capability 3.0 and higher and requires an
 > NVIDIA Driver compatible with CUDA Toolkit 6.5.
 
+Not tested but worth trying: https://github.com/tensorflow/tensorflow/issues/1498. In the discussion it was figured out the main problem was:
+> in this thread wants to support compute_20 device. However, since Eigen starts to use warp shuffling instructions, which is only available for compute_30 devices and later, it won't work.
+
 If you've already got NVIDIA GPU of compute capability 3.0 and still enjoy the thrill of building Tensorflow from source you can get support at https://github.com/yaroslavvb/tensorflow-community-wheels/issues/107
